@@ -15,14 +15,10 @@ class Operation(threading._Timer):
         self.interval = interval
 
     def run(self):
-        elastalert_logger.info("leon, start to run .........finished:%s..............", self.finished)
         while True:
             self.finished.clear()
-            elastalert_logger.info("leon, finished:%s..............", self.finished)
             self.finished.wait(self.interval)
-            elastalert_logger.info("leon, finished:%s..............", self.finished)
             if not self.finished.isSet():
-                elastalert_logger.info("leon, finished is set..............")
                 self.function(*self.args, **self.kwargs)
             else:
                 return
@@ -41,3 +37,4 @@ class Manager(object):
         for op in self.ops:
             op.cancel()
         #self._event.set()
+

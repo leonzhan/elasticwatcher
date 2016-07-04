@@ -79,7 +79,7 @@ class ElastWatcher():
 
         self.conf = load_rules(self.args)
         self.global_config = load_global_config()
-        #elastalert_logger.info("leon, self.conf.......................")
+
         #for key,value in self.conf.items():
         #    elastalert_logger.info("%s => %s", key, value)
 
@@ -260,7 +260,7 @@ class ElastWatcher():
         """
 
         rule_inst = rule['type']
-        elastalert_logger.info("leon, rule instance:%s" % str(rule_inst))
+
         # Reset hit counter and query
         prev_num_hits = self.num_hits
         index = rule["input"]["search"]["request"]["indices"]
@@ -615,7 +615,7 @@ class ElastWatcher():
         num_matches = len(rule['type'].matches)
         while rule['type'].matches:
             match = rule['type'].matches.pop(0)
-            elastalert_logger.info("leon,..................match:%s", match)
+
             #if self.is_silenced(rule['name'] + key) or self.is_silenced(rule['name']):
             #    elastalert_logger.info('Ignoring match for silenced rule %s%s' % (rule['name'], key))
             #    continue
@@ -644,6 +644,7 @@ class ElastWatcher():
     
     def stop(self):
         """ Stop an elasticwatcher runner that's been started """
+
         self.running = False
 
 
@@ -651,11 +652,11 @@ class ElastWatcher():
         
         self.running = True
         elastalert_logger.info("Starting up")
-        scheduler = schedule.Manager()
+
+        self.scheduler = schedule.Manager()
         for rule in self.rules:
             rule_interval = intervalInSecond(rule.get("trigger").get("schedule").get("interval"))
-            elastalert_logger.info('leon, rule_interval:%s...', rule_interval)
-            scheduler.add_operation(self.run_rule, rule_interval, [rule])
+            self.scheduler.add_operation(self.run_rule, rule_interval, [rule])
             #rule_timer = threading.Timer(rule_interval, self.run_rule, [rule])
             #self.rule_jobs.append(rule_timer)
             #rule_timer.start()
