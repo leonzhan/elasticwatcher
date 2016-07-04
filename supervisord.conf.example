@@ -17,7 +17,7 @@ serverurl=unix:///var/run/elasticwatcher_supervisor.sock
 
 [program:elasticwatcher]
 # running globally
-command = python elasticwatcher.py --verbose
+command = python elasticwatcher/watcher.py --verbose
 # (alternative) using virtualenv
 # command=/path/to/venv/bin/elasticwatcher --config /path/to/config.yaml --verbose 
 process_name=elasticwatcher

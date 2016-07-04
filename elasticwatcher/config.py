@@ -46,9 +46,6 @@ def load_global_config():
         global_config = json.loads(open(filename).read(), encoding="utf-8")
     except ValueError as e:
         raise EAException('Could not parse file %s: %s' % (filename, e))
-    elastalert_logger.info("leon, global config..............%s..........", filename)
-    for key,value in global_config.items():
-        elastalert_logger.info("%s => %s", key, value)
     return global_config
 
 def load_rules(args):
@@ -182,10 +179,8 @@ def load_alerts(rule, alert_field):
 
     def create_alert(alert, alert_config):
         alert_class = alerts_mapping.get(alert) or get_module(alert)
-        elastalert_logger.info("leon, 3.1........alert_class:%s...............", alert_class)
         if not issubclass(alert_class, alerts.Alerter):
             raise EAException('Alert module %s is not a subclass of Alerter' % (alert))
-        elastalert_logger.info("leon, 3.2.......................")
         #missing_options = (rule['type'].required_options | alert_class.required_options) - frozenset(alert_config or [])
         #elastalert_logger.info("leon, 3.3.......................")
         #if missing_options:
@@ -195,18 +190,13 @@ def load_alerts(rule, alert_field):
     try:
         if type(alert_field) != list:
             alert_field = [alert_field]
-        elastalert_logger.info("leon, 1........................")
         alert_field = [normalize_config(x) for x in alert_field]
-        elastalert_logger.info("leon, 2........................")
         alert_field = sorted(alert_field, key=lambda (a, b): alerts_order.get(a, -1))
-        elastalert_logger.info("leon, 3.........alert_field:%s...............", alert_field)
         # Convert all alerts into Alerter objects
         alert_field = [create_alert(a, b) for a, b in alert_field]
-        elastalert_logger.info("leon, 4........................")
 
     except (KeyError, EAException) as e:
         raise EAException('Error initiating alert %s: %s' % (rule['actions'], e))
-    elastalert_logger.info("leon, alert_field..............%s..........", alert_field)
 
     return alert_field
 

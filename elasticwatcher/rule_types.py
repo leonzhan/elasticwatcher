@@ -104,10 +104,6 @@ class BlacklistRule(CompareRule):
     required_options = frozenset(['compare_key', 'blacklist'])
 
     def compare(self, event):
-<<<<<<< cd775e9a9799df893db3dfc7db32c7b3b2e96c8a
-        elastalert_logger.info("leon, event:%s", event)
-=======
->>>>>>> Init commit for elasticwatcher
         term = lookup_es_key(event, self.rule.get("condition").get("compare_key"))
 
         if term in self.rule.get("condition").get("blacklist"):
