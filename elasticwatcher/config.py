@@ -31,7 +31,8 @@ rules_mapping = {
     'flatline': rule_types.FlatlineRule,
     'new_term': rule_types.NewTermsRule,
     'cardinality': rule_types.CardinalityRule,
-    "expected": rule_types.ExpectedRule
+    "expected": rule_types.ExpectedRule,
+    "aggregation_expected": rule_types.AggExpectedRule
 }
 
 alerts_order = {
@@ -111,6 +112,7 @@ def load_configuration(filename, conf, args=None):
         raise EAException('Could not parse file %s: %s' % (filename, e))
 
     rule['rule_file'] = filename
+
     load_options(rule, args)
     load_modules(rule, args)
     return rule

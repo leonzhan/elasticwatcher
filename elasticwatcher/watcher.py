@@ -370,7 +370,7 @@ class ElastWatcher():
         #        alert_body['aggregate_id'] = agg_id
         #    res = self.writeback('elastalert', alert_body)
         #    if res and not agg_id:
-        #        agg_id = res['_id']
+        #        agg_id = res['_id']Ggg
 
     def get_alert_body(self, match, rule, alert_sent, alert_time, alert_exception=None):
         body = {'match_body': match}
@@ -604,10 +604,15 @@ class ElastWatcher():
         :return: The number of matches that the rule produced.
         """
 
-        elastalert_logger.info('Start to run rule ........')
+        elastalert_logger.info('Start to run rule: %s........', rule.get('name'))
         # Run the rule. If querying over a large time period, split it up into segments
         self.num_hits = 0
-        self.current_es = self.new_elasticsearch(self.global_config)
+        rule_request = rule.get("input").get("search").get("request")
+        if rule_request.get("elastic_host", None) is not None and rule_request.get("elastic_port", None) is not None:
+            self.current_es = Elasticsearch(host=rule.get("input").get("search").get("request").get("elastic_host"),
+                             port=rule.get("input").get("search").get("request").get("elastic_port"))
+        else:
+            self.current_es = self.new_elasticsearch(self.global_config)
         
         self.run_query(rule)
 
@@ -646,7 +651,7 @@ class ElastWatcher():
         """ Stop an elasticwatcher runner that's been started """
 
         self.running = False
-
+        
 
     def start(self):
         

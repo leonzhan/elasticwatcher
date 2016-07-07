@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import copy
 import datetime
+import operator
 
 from blist import sortedlist
 from elasticsearch.client import Elasticsearch
@@ -16,6 +17,17 @@ from util import pretty_ts
 from util import ts_now
 from util import ts_to_dt
 
+
+
+OPS_DICT = {
+    "==": operator.eq,
+    "!=": operator.ne,
+    "<>": operator.ne,
+    "<": operator.lt,
+    "<=": operator.le,
+    ">": operator.gt,
+    ">": operator.ge
+}
 
 class RuleType(object):
     """ The base class for a rule type.
@@ -131,7 +143,19 @@ class ExpectedRule(CompareRule):
         term = lookup_es_key(event, self.rule['compare_key'])
         if term is None:
             return not self.rule['ignore_null']
-        if term not in self.rule['whitelist']:
+        if OPS_DICT.get(self.rule.get('condition').get('operator'))(term, self.rule.get("condition").get('expected')):
+            return True
+        return False
+
+class AggExpectedRule(CompareRule):
+    """ A CompareRule where the compare function checks a given term with an expected value """
+    required_options = frozenset(['compare_key', 'operator', 'expected'])
+
+    def compare(self, event):
+        term = lookup_es_key(event, self.rule.get('condition').get('compare_key'))
+        if term is None:
+            return not self.rule.get('condition').get('ignore_null')
+        if OPS_DICT.get(self.rule.get('condition').get('operator'))(term, self.rule.get('condition').get('expected')):
             return True
         return False
 

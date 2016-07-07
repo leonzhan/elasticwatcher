@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import logging
+import operator
 import re
 
 import dateutil.parser
@@ -15,6 +16,9 @@ interval_dict = OrderedDict([("y", 365*86400),  # 1 year
                              ("h", 3600),       # 1 hour
                              ("m", 60),         # 1 minute
                              ("s", 1)])         # 1 second
+
+
+
 
 logging.basicConfig()
 elastalert_logger = logging.getLogger('elastalert')

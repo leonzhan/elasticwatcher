@@ -1,7 +1,7 @@
 {
   "trigger": {
     "schedule": {
-      "interval": "1m"
+      "interval": "5m"
     }
   },
   "name": "cluster_red_alert",
