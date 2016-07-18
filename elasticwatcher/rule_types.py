@@ -1,7 +1,12 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python
+ # -*- coding: utf-8 -*-
+
 import copy
 import datetime
+import json
 import operator
+import subprocess
+
 
 from blist import sortedlist
 from elasticsearch.client import Elasticsearch
@@ -12,10 +17,13 @@ from util import elastalert_logger
 from util import format_index
 from util import hashable
 from util import lookup_es_key
+
 from util import new_get_event_ts
 from util import pretty_ts
 from util import ts_now
 from util import ts_to_dt
+
+import util
 
 
 
@@ -28,6 +36,18 @@ OPS_DICT = {
     ">": operator.gt,
     ">": operator.ge
 }
+
+def ruby_alert_determine(cmd_ary):
+    proc = subprocess.Popen(
+        cmd_ary,stdout=subprocess.PIPE,
+        stdin=subprocess.PIPE)
+    out, err = proc.communicate()
+    return proc.returncode, out, err
+
+
+def lookup_value_source(d, key):
+    hit = d.get('hits').get('hits')[0]['_source']
+    return lookup_es_key(hit, key)
 
 class RuleType(object):
     """ The base class for a rule type.
@@ -106,9 +126,8 @@ class CompareRule(RuleType):
 
     def add_data(self, data):
         # If compare returns true, add it as a match
-        for event in data:
-            if self.compare(event):
-                self.add_match(event)
+        if self.compare(data):
+            self.add_match(data)
 
 
 class BlacklistRule(CompareRule):
@@ -116,8 +135,8 @@ class BlacklistRule(CompareRule):
     required_options = frozenset(['compare_key', 'blacklist'])
 
     def compare(self, event):
-        term = lookup_es_key(event, self.rule.get("condition").get("compare_key"))
-
+        term = lookup_value_source(event, self.rule.get("condition").get("compare_key"))
+        
         if term in self.rule.get("condition").get("blacklist"):
             return True
         return False
@@ -151,13 +170,30 @@ class AggExpectedRule(CompareRule):
     """ A CompareRule where the compare function checks a given term with an expected value """
     required_options = frozenset(['compare_key', 'operator', 'expected'])
 
-    def compare(self, event):
-        term = lookup_es_key(event, self.rule.get('condition').get('compare_key'))
-        if term is None:
-            return not self.rule.get('condition').get('ignore_null')
-        if OPS_DICT.get(self.rule.get('condition').get('operator'))(term, self.rule.get('condition').get('expected')):
-            return True
-        return False
+    def compare(self, data):
+        if self.rule.get('condition').get('script'):
+            if self.rule.get('condition').get('script').get('inline'):
+                script = self.rule.get('condition').get('script').get('inline')
+                ret = ruby_alert_determine(['ruby', 'elasticwatcher/script_inline_alert_check.rb', '--query_result', json.dumps(data), '--script', script])
+                
+                if ret[1] == 'true':
+                    return True
+                else:
+                    return False
+            else:
+                ruby_script_name = self.rule.get('condition').get('script').get('name')
+                determine_result = ruby_alert_determine(['ruby', 'rules/'+ruby_script_name, '--query_result', json.dumps(data)])
+                if determine_result[1] == "true":
+                    return True
+                else:
+                    return False        
+        else:
+            term = lookup_es_key(data, self.rule.get('condition').get('compare_key'))
+            if term is None:
+                return not self.rule.get('condition').get('ignore_null')
+            if OPS_DICT.get(self.rule.get('condition').get('operator'))(term, self.rule.get('condition').get('expected')):
+                return True
+            return False
 
 class ChangeRule(CompareRule):
     """ A rule that will store values for a certain term and match if those values change """

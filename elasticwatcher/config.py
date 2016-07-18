@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+import codecs
 import copy
 import datetime
 import hashlib
@@ -107,7 +109,8 @@ def load_configuration(filename, conf, args=None):
     :return: The rule configuration, a dictionary.
     """
     try:
-        rule = json.loads(open(filename).read(), encoding="utf-8")
+        with codecs.open(filename, 'r', encoding='utf-8') as f:
+            rule = json.loads(f.read())
     except ValueError as e:
         raise EAException('Could not parse file %s: %s' % (filename, e))
 
@@ -184,7 +187,6 @@ def load_alerts(rule, alert_field):
         if not issubclass(alert_class, alerts.Alerter):
             raise EAException('Alert module %s is not a subclass of Alerter' % (alert))
         #missing_options = (rule['type'].required_options | alert_class.required_options) - frozenset(alert_config or [])
-        #elastalert_logger.info("leon, 3.3.......................")
         #if missing_options:
         #    raise EAException('Missing required option(s): %s' % (', '.join(missing_options)))
         return alert_class(alert_config)

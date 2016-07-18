@@ -24,6 +24,18 @@ logging.basicConfig()
 elastalert_logger = logging.getLogger('elastalert')
 
 
+def lookup_value_in_nested_dict_by_key(d, key):
+    for k, v in d.items ():
+        if isinstance (v, dict):
+            for found in listRecursive (v, key):
+                yield found
+        if isinstance (v, list):
+            for item in v:
+                for found in listRecursive (v, key):
+                    yield found
+        if k == key:
+            yield v
+
 def new_get_event_ts(ts_field):
     """ Constructs a lambda that may be called to extract the timestamp field
     from a given event.
@@ -72,6 +84,7 @@ def _find_es_dict_by_key(lookup_dict, term):
     dict_cursor = lookup_dict
     subkeys = term.split('.')
     subkey = ''
+    elastalert_logger.info("leon, subkeys:%s, dict_cursor:%s\n", subkeys, dict_cursor)
 
     while len(subkeys) > 0:
         subkey += subkeys.pop(0)

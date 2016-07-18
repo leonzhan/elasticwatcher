@@ -185,43 +185,6 @@ class ElastWatcher():
             return '1969-12-30T00:00:00Z'
         return res['hits']['hits'][0][timestamp_field]
 
-    @staticmethod
-    def process_hits(rule, hits):
-        """ Update the _source field for each hit received from ES based on the rule configuration.
-
-        This replaces timestamps with datetime objects,
-        folds important fields into _source and creates compound query_keys.
-
-        :return: A list of processed _source dictionaries.
-        """
-
-        processed_hits = []
-        for hit in hits:
-            # Merge fields and _source
-            hit.setdefault('_source', {})
-            for key, value in hit.get('fields', {}).items():
-                # Fields are returned as lists, assume any with length 1 are not arrays in _source
-                # Except sometimes they aren't lists. This is dependent on ES version
-                hit['_source'].setdefault(key, value[0] if type(value) is list and len(value) == 1 else value)
-
-            # Convert the timestamp to a datetime
-            #ts = lookup_es_key(hit['_source'], rule['timestamp_field'])
-            #set_es_key(hit['_source'], rule['timestamp_field'], rule['ts_to_dt'](ts))
-            #set_es_key(hit, rule['timestamp_field'], lookup_es_key(hit['_source'], rule['timestamp_field']))
-
-            # Tack metadata fields into _source
-            for field in ['_id', '_index', '_type']:
-                if field in hit:
-                    hit['_source'][field] = hit[field]
-
-            if rule.get('compound_query_key'):
-                values = [lookup_es_key(hit['_source'], key) for key in rule['compound_query_key']]
-                hit['_source'][rule['query_key']] = ', '.join([unicode(value) for value in values])
-
-            processed_hits.append(hit['_source'])
-
-        return processed_hits
-
     def get_hits(self, rule, index):
         """ Query elasticsearch for the given rule and return the results.
 
@@ -232,25 +195,18 @@ class ElastWatcher():
         # Parse rule and prepare query criteria like size, sort, from
         query = rule["input"]["search"]["request"]["body"]
         extra_args = {}
+        res = {}
         try:
             res = self.current_es.search(index=index, body=query, **extra_args)
             #elastalert_logger.info("=================query result==================================")
             #for key,value in res.items():
             #    elastalert_logger.info("%s => %s", key, value)
         except ElasticsearchException as e:
-        
             return None
 
-        hits = res['hits']['hits']
-        self.num_hits += len(hits)
 
-        elastalert_logger.info("Queried rule %s: %s hits" % (rule['name'], len(hits)))
-        hits = self.process_hits(rule, hits)
-
-        # Record doc_type for use in get_top_counts
-        if 'doc_type' not in rule and len(hits):
-            rule['doc_type'] = hits[0]['_type']
-        return hits
+        elastalert_logger.info("Queried rule %s: %s hits" % (rule['name'], res.get('hits').get('total')))
+        return res
 
     def run_query(self, rule):
         """ Query for the rule and pass all of the results to the RuleType instance.
@@ -262,7 +218,7 @@ class ElastWatcher():
         rule_inst = rule['type']
 
         # Reset hit counter and query
-        prev_num_hits = self.num_hits
+        #prev_num_hits = self.num_hits
         index = rule["input"]["search"]["request"]["indices"]
         data = self.get_hits(rule, index)
 
@@ -604,7 +560,7 @@ class ElastWatcher():
         :return: The number of matches that the rule produced.
         """
 
-        elastalert_logger.info('Start to run rule: %s........', rule.get('name'))
+        elastalert_logger.info('Start to run rule: %s', rule.get('name'))
         # Run the rule. If querying over a large time period, split it up into segments
         self.num_hits = 0
         rule_request = rule.get("input").get("search").get("request")
@@ -618,6 +574,7 @@ class ElastWatcher():
 
         # Process any new matches
         num_matches = len(rule['type'].matches)
+
         while rule['type'].matches:
             match = rule['type'].matches.pop(0)
 
