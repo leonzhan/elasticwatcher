@@ -180,4 +180,4 @@ class PagerDutyAlerter(Alerter):
             response.raise_for_status()
         except RequestException as e:
             raise EAException("Error posting to pagerduty: %s" % e)
-        elastalert_logger.info("Trigger sent to PagerDuty")
+        elastalert_logger.info("Trigger %s sent to PagerDuty", self.rule.get('name'))
