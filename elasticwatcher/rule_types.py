@@ -159,9 +159,9 @@ class ExpectedRule(CompareRule):
     required_options = frozenset(['compare_key', 'expected_value'])
 
     def compare(self, event):
-        term = lookup_es_key(event, self.rule['compare_key'])
+        term = lookup_value_source(event, self.rule.get('condition').get('compare_key'))
         if term is None:
-            return not self.rule['ignore_null']
+            return not self.rule.get('condition').get('ignore_null')
         if OPS_DICT.get(self.rule.get('condition').get('operator'))(term, self.rule.get("condition").get('expected')):
             return True
         return False
