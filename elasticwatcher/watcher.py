@@ -614,7 +614,7 @@ class ElastWatcher():
         
         self.running = True
         elastalert_logger.info("Starting up")
-
+        print "Starting up"
         self.scheduler = schedule.Manager()
         for rule in self.rules:
             rule_interval = intervalInSecond(rule.get("trigger").get("schedule").get("interval"))
