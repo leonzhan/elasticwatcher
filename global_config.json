@@ -1,4 +1,4 @@
 {
-"marvel_es_host": "10.29.97.129",
+"marvel_es_host": "localhost",
 "marvel_es_port": 9200
 }
